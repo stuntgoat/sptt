@@ -19,6 +19,7 @@ const (
 	TRAINING_SET
 	)
 
+var FILENAME string
 var PERCENTAGE_TRAIN int
 var PERCENTAGE_TEST int
 var command = os.Args[0]
@@ -58,14 +59,9 @@ type Splitter struct {
 	percentageMap map[int]int
 	sortedPMapKeys []int // indexes by sorted values in percentageMap
 	well []string
-	WellSize int
-	wellSeen int
 	count int
 }
-var SAMPLE = Splitter{
-	WellSize: 100,
-}
-
+var SAMPLE = Splitter{}
 
 // https://gist.github.com/ikbear/4038654
 type SortedIntIntMap struct {
@@ -95,8 +91,7 @@ func SortedIntIntMapKeys(m map[int]int) []int {
 	return siim.i
 }
 
-// distributeRemainder is called when the WellSize is less than 100.
-// It will distribute the values from the well into the buckets
+// distributeLines will distribute the values from the well into the buckets
 // using a probability distribution created from the
 // objects percentageMap values.
 // This occurs when the program receives a SIGINT while scanning a file
@@ -109,18 +104,21 @@ func (splitter *Splitter) distributeLines() {
 	var probValue float64
 	var line string
 
+	// sort well
+	percent_sample.Shuffle235(splitter.well, splitter.count)
+
 	// bucket indexes, sorted by values in splitter.percentageMap
 	sortedKeys := SortedIntIntMapKeys(splitter.percentageMap)
 
 	// for every value in the current well,
 	// randomly select a bucket to place the value in the well
-	for i := 0; i < splitter.wellSeen; i++ {
+	for i := 0; i < splitter.count; i++ {
 		choice = rand.Float64()
 		val = 0.0
 
 		for _, bucketIndex := range sortedKeys {
 			intPercentValue = splitter.percentageMap[bucketIndex]
-			probValue = float64(intPercentValue) / float64(splitter.WellSize)
+			probValue = float64(intPercentValue) / 100.0
 
 			val = val + probValue
 			if choice < val {
@@ -132,37 +130,10 @@ func (splitter *Splitter) distributeLines() {
 	}
 }
 
-
-// wellToBuckets shuffles the well and then adds the lines
-// to the buckets with the percentages in splitter.percentageMap
-func (splitter *Splitter) wellToBuckets() {
-	percent_sample.Shuffle235(splitter.well, splitter.wellSeen)
-
-	// add to the testing bucket
-	for i := 0; i < PERCENTAGE_TEST; i++ {
-		splitter.buckets[TESTING_SET] = append(splitter.buckets[TESTING_SET],
-			splitter.well[i])
-	}
-
-	// add to the training bucket
-	for i := PERCENTAGE_TEST; i < splitter.WellSize; i++ {
-		splitter.buckets[TRAINING_SET] = append(splitter.buckets[TRAINING_SET],
-			splitter.well[i])
-	}
-	splitter.well = make([]string, 0)
-	splitter.wellSeen = 0
-}
-
-
 // AddLine places the line into the total sample
 func (splitter *Splitter) AddLine(line string) {
 	splitter.well = append(splitter.well, line)
-	splitter.wellSeen++
 	splitter.count++
-
-	if splitter.wellSeen == splitter.WellSize {
-		splitter.wellToBuckets()
-	}
 }
 
 // writeFiles writes the testing and training files to disk.
@@ -225,9 +196,9 @@ func handleSignal() {
 	<- sigChannel
 
 	SAMPLE.distributeLines()
+	SAMPLE.writeFiles(FILENAME)
 	os.Exit(0)
 }
-
 
 func main() {
 	var file *os.File
@@ -244,12 +215,12 @@ func main() {
 		TRAINING_SET: PERCENTAGE_TRAIN,
 	}
 
-	fileName := flag.Arg(0)
+	FILENAME = flag.Arg(0)
 
-	if fileName == "-" {
+	if FILENAME == "-" {
 		file = os.Stdin
 	} else {
-		file = parseFile(fileName)
+		file = parseFile(FILENAME)
 		defer file.Close()
 	}
 
@@ -260,6 +231,6 @@ func main() {
 		line = fmt.Sprint(scanner.Text())
 		SAMPLE.AddLine(line)
 	}
-	SAMPLE.distributeRemainder()
-	SAMPLE.writeFiles(fileName)
+	SAMPLE.distributeLines()
+	SAMPLE.writeFiles(FILENAME)
 }

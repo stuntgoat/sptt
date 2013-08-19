@@ -1,20 +1,13 @@
-`asprl`
+`sptt`
 ======
 
-Approximately Split a file into percentages of Randomly chosen Lines.
+Split a file into a Percentage of Test and Train data
 
-This is used for dividing a dataset into testing and training and validation sets.
-
-Split a file into a random Percentage of Testing and Training data files.
+This is used for dividing a dataset into testing, training sets.
 
 Usage:
 
-    # split the file named 'data' into 'data.train', containing 10% training data
-    # and another file named 'data.test'
+    # split the file named 'data' into 'data.train', containing ~90% training data
+    # and another file named 'data.test', containing ~10% testing data
+
     $ sptt -train 90 data
-
-    # another way to accomplish the same task
-    $ sptt -test 10 data
-
-    # create 4 files that divides a file between 4 different files of random lines
-    $ sptt -validation 4 data

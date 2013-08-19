@@ -1,9 +1,7 @@
 `sptt`
 ======
 
-Split a file into a Percentage of Test and Train data
-
-This is used for dividing a dataset into testing, training sets.
+Split data into a Percentage of Test and Train sets.
 
 Usage:
 

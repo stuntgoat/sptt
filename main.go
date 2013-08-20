@@ -37,7 +37,7 @@ func init() {
 	pTrainHelp := "Percentage of randomly selected lines for training dataset."
 	ptrain := flag.Int("train", 0, pTrainHelp)
 
-	logger = log.New(os.Stderr, "[SPTT] ", log.LstdFlags|log.Lshortfile)
+	logger = log.New(os.Stderr, "[sptt] ", log.LstdFlags|log.Lshortfile)
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	flag.Usage = Usage
@@ -57,7 +57,7 @@ type Splitter struct {
 	// maps an index of `buckets` that to a percentage of samples
 	// for that bucket.
 	percentageMap map[int]int
-	sortedPMapKeys []int // indexes by sorted values in percentageMap
+
 	well []string
 	count int
 }
@@ -216,9 +216,9 @@ func main() {
 	}
 
 	FILENAME = flag.Arg(0)
-
 	if FILENAME == "-" {
 		file = os.Stdin
+		FILENAME = "STDIN"
 	} else {
 		file = parseFile(FILENAME)
 		defer file.Close()

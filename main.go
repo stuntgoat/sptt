@@ -136,40 +136,6 @@ func (splitter *Splitter) AddLine(line string) {
 	splitter.count++
 }
 
-// writeFiles writes the testing and training files to disk.
-func (splitter *Splitter) writeFiles(name string) {
-	testFile := name + ".test"
-	trainFile := name + ".train"
-
-	tf, err := os.Create(testFile)
-	if err != nil {
-		logger.Printf("[Error] unable to open %s: %s", testFile, err)
-		os.Exit(1)
-	}
-	defer tf.Close()
-	for _, line := range splitter.buckets[TESTING_SET] {
-		_, err := tf.WriteString(line + "\n")
-		if err != nil {
-			logger.Print("[Error] unable to write line to test file")
-			os.Exit(1)
-		}
-	}
-
-	tf, err = os.Create(trainFile)
-	if err != nil {
-		logger.Printf("[Error] unable to open %s: %s", testFile, err)
-		os.Exit(1)
-	}
-	defer tf.Close()
-	for _, line := range splitter.buckets[TRAINING_SET] {
-		_, err := tf.WriteString(line + "\n")
-		if err != nil {
-			logger.Print("[Error] unable to write line to train file")
-			os.Exit(1)
-		}
-	}
-}
-
 // parseFile validates a string and returns an *os.File
 func parseFile(s string) (file *os.File) {
 	if s == "" {
@@ -188,6 +154,30 @@ func parseFile(s string) (file *os.File) {
 	return file
 }
 
+func writeLines() {
+	trainingFile := FILENAME + ".train"
+	testingFile := FILENAME + ".test"
+	writeFiles(trainingFile, SAMPLE.buckets[TRAINING_SET])
+	writeFiles(testingFile, SAMPLE.buckets[TESTING_SET])
+}
+
+// writeFiles writes the testing and training files to disk.
+func writeFiles(name string, lines []string) {
+	tf, err := os.Create(name)
+	if err != nil {
+		logger.Printf("[Error] unable to open %s: %s", name, err)
+		os.Exit(1)
+	}
+	defer tf.Close()
+	for _, line := range lines {
+		_, err := tf.WriteString(line + "\n")
+		if err != nil {
+			logger.Print("[Error] unable to write line to test file")
+			os.Exit(1)
+		}
+	}
+}
+
 // handleSignal handles a SIGINT (control-c) when the user
 // might want to break from a stream while sampling a percentage.
 func handleSignal() {
@@ -196,7 +186,7 @@ func handleSignal() {
 	<- sigChannel
 
 	SAMPLE.distributeLines()
-	SAMPLE.writeFiles(FILENAME)
+	writeLines()
 	os.Exit(0)
 }
 
@@ -232,5 +222,5 @@ func main() {
 		SAMPLE.AddLine(line)
 	}
 	SAMPLE.distributeLines()
-	SAMPLE.writeFiles(FILENAME)
+	writeLines()
 }

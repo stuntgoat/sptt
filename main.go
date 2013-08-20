@@ -8,7 +8,6 @@ import (
 	"math/rand"
 	"os"
 	"os/signal"
-	"sort"
 	"time"
 
 	"github.com/stuntgoat/snl/percent_sample"
@@ -63,34 +62,6 @@ type Splitter struct {
 }
 var SAMPLE = Splitter{}
 
-// https://gist.github.com/ikbear/4038654
-type SortedIntIntMap struct {
-	m map[int]int
-	i []int
-}
-func (s SortedIntIntMap) Len() int {
-	return len(s.m)
-}
-func (s SortedIntIntMap) Less(i, j int) bool {
-	return s.m[s.i[i]] < s.m[s.i[j]]
-}
-func (s SortedIntIntMap) Swap(i, j int) {
-	s.i[i], s.i[j] = s.i[j], s.i[i]
-}
-func SortedIntIntMapKeys(m map[int]int) []int {
-	siim := SortedIntIntMap{
-		m: m,
-		i: make([]int, len(m)),
-	}
-	i := 0
-	for key, _ := range m {
-		siim.i[i] = key
-		i++
-	}
-	sort.Sort(siim)
-	return siim.i
-}
-
 // distributeLines will distribute the values from the well into the buckets
 // using a probability distribution created from the
 // objects percentageMap values.
@@ -100,15 +71,11 @@ func SortedIntIntMapKeys(m map[int]int) []int {
 func (splitter *Splitter) distributeLines() {
 	var choice float64
 	var val float64
-	var intPercentValue int
 	var probValue float64
 	var line string
 
 	// sort well
 	percent_sample.Shuffle235(splitter.well, splitter.count)
-
-	// bucket indexes, sorted by values in splitter.percentageMap
-	sortedKeys := SortedIntIntMapKeys(splitter.percentageMap)
 
 	// for every value in the current well,
 	// randomly select a bucket to place the value in the well
@@ -116,8 +83,7 @@ func (splitter *Splitter) distributeLines() {
 		choice = rand.Float64()
 		val = 0.0
 
-		for _, bucketIndex := range sortedKeys {
-			intPercentValue = splitter.percentageMap[bucketIndex]
+		for bucketIndex, intPercentValue := range splitter.percentageMap {
 			probValue = float64(intPercentValue) / 100.0
 
 			val = val + probValue

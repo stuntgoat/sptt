@@ -34,9 +34,9 @@ func (splitter *Splitter) DistributeLines() {
 	percent_sample.Shuffle235(splitter.well, splitter.count)
 
 
-	var totalValues = 0
+	var totalValues = 0.0
 	for _, percentVal := range splitter.PercentageMap {
-		totalValues += percentVal
+		totalValues += float64(percentVal)
 	}
 
 	// for every value in the current well,

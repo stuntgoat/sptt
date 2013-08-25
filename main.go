@@ -78,8 +78,8 @@ func parseFile(s string) (file *os.File) {
 func writeFiles() {
 	trainingFile := FILENAME + ".train"
 	testingFile := FILENAME + ".test"
-	writeFiles(trainingFile, SAMPLE.Buckets[TRAINING_SET])
-	writeFiles(testingFile, SAMPLE.Buckets[TESTING_SET])
+	writeFile(trainingFile, SAMPLE.Buckets[TRAINING_SET])
+	writeFile(testingFile, SAMPLE.Buckets[TESTING_SET])
 
 	if VALIDATION == 0 {
 		return
@@ -88,25 +88,32 @@ func writeFiles() {
 	// create a new validation sample object from the training data bucket
 	// use the number of buckets in VALIDATION
 	vSample := splitter.Splitter{
-	Buckets: make([][]string, 0)
+		Buckets: make([][]string, 0),
+		PercentageMap: make(map[int]int),
 	}
 
 	for i := 0; i < VALIDATION; i++ {
-		vSample.Buckets[i] = make([]string, 0)
+		vSample.Buckets = append(vSample.Buckets,  make([]string, 0))
 	}
 
-	percentage
-
-
-	SAMPLE.PercentageMap = map[int]int{
-		TESTING_SET: PERCENTAGE_TEST,
-		TRAINING_SET: PERCENTAGE_TRAIN,
+	vBucketPercent := int((100.0 / float64(VALIDATION)))
+	for i := 0; i < VALIDATION; i++ {
+		vSample.PercentageMap[i] = vBucketPercent
 	}
 
 	// call AddLine for each line in the training data
+	for _, line := range SAMPLE.Buckets[TRAINING_SET] {
+		vSample.AddLine(line)
+	}
 
+	vSample.DistributeLines()
+
+	var nameWithSuffix string
 	// call Write file for each bucket in the validation sample Bucket
-
+	for i, bucket := range vSample.Buckets {
+		nameWithSuffix = fmt.Sprintf("%s.V.%d", trainingFile, i + 1)
+		writeFile(nameWithSuffix, bucket)
+	}
 }
 
 // writeFiles writes the testing and training files to disk.

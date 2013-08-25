@@ -11,6 +11,6 @@ Usage for files, where `PERCENT` is an integer and `FILE` is a relative path:
 
     sptt -train PERCENT FILE
 
-Usage for STDIN:
+Usage for STDIN (this writes 2 files; `STDIN.test` and `STDIN.train`):
 
     sptt -train PERCENT -

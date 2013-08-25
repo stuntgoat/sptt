@@ -9,14 +9,13 @@ import (
 	"os"
 	"os/signal"
 	"time"
-
-	"github.com/stuntgoat/snl/percent_sample"
+	"github.com/stuntgoat/sptt/splitter"
 )
 
 const (
 	TESTING_SET = iota
 	TRAINING_SET
-	)
+)
 
 var FILENAME string
 var PERCENTAGE_TRAIN int
@@ -24,6 +23,8 @@ var PERCENTAGE_TEST int
 var command = os.Args[0]
 var invocation = fmt.Sprintf("%s -train PERCENT FILE\n", command)
 var invocationStdin = fmt.Sprintf("%s -train PERCENT -\n", command)
+
+var SAMPLE = splitter.Splitter{}
 
 var logger *log.Logger
 
@@ -50,57 +51,9 @@ func init() {
 	}
 }
 
-type Splitter struct {
-	buckets [][]string
 
-	// maps an index of `buckets` that to a percentage of samples
-	// for that bucket.
-	percentageMap map[int]int
 
-	well []string
-	count int
-}
-var SAMPLE = Splitter{}
 
-// distributeLines will distribute the values from the well into the buckets
-// using a probability distribution created from the
-// objects percentageMap values.
-// This occurs when the program receives a SIGINT while scanning a file
-// or if the file contains a number of lines that are not evenly
-// divided by 100.
-func (splitter *Splitter) distributeLines() {
-	var choice float64
-	var val float64
-	var probValue float64
-	var line string
-
-	// sort well
-	percent_sample.Shuffle235(splitter.well, splitter.count)
-
-	// for every value in the current well,
-	// randomly select a bucket to place the value in the well
-	for i := 0; i < splitter.count; i++ {
-		choice = rand.Float64()
-		val = 0.0
-
-		for bucketIndex, intPercentValue := range splitter.percentageMap {
-			probValue = float64(intPercentValue) / 100.0
-
-			val = val + probValue
-			if choice < val {
-				line = splitter.well[i]
-				splitter.buckets[bucketIndex] = append(splitter.buckets[bucketIndex], line)
-				break
-			}
-		}
-	}
-}
-
-// AddLine places the line into the total sample
-func (splitter *Splitter) AddLine(line string) {
-	splitter.well = append(splitter.well, line)
-	splitter.count++
-}
 
 // parseFile validates a string and returns an *os.File
 func parseFile(s string) (file *os.File) {
@@ -123,8 +76,8 @@ func parseFile(s string) (file *os.File) {
 func writeLines() {
 	trainingFile := FILENAME + ".train"
 	testingFile := FILENAME + ".test"
-	writeFiles(trainingFile, SAMPLE.buckets[TRAINING_SET])
-	writeFiles(testingFile, SAMPLE.buckets[TESTING_SET])
+	writeFiles(trainingFile, SAMPLE.Buckets[TRAINING_SET])
+	writeFiles(testingFile, SAMPLE.Buckets[TESTING_SET])
 }
 
 // writeFiles writes the testing and training files to disk.
@@ -151,7 +104,7 @@ func handleSignal() {
 	signal.Notify(sigChannel, os.Interrupt)
 	<- sigChannel
 
-	SAMPLE.distributeLines()
+	SAMPLE.DistributeLines()
 	writeLines()
 	os.Exit(0)
 }
@@ -165,8 +118,8 @@ func main() {
 	trainBucket := make([]string, 0)
 	PERCENTAGE_TEST = 100 - PERCENTAGE_TRAIN
 
-	SAMPLE.buckets = [][]string{testBucket, trainBucket}
-	SAMPLE.percentageMap = map[int]int{
+	SAMPLE.Buckets = [][]string{testBucket, trainBucket}
+	SAMPLE.PercentageMap = map[int]int{
 		TESTING_SET: PERCENTAGE_TEST,
 		TRAINING_SET: PERCENTAGE_TRAIN,
 	}
@@ -187,6 +140,6 @@ func main() {
 		line = fmt.Sprint(scanner.Text())
 		SAMPLE.AddLine(line)
 	}
-	SAMPLE.distributeLines()
+	SAMPLE.DistributeLines()
 	writeLines()
 }

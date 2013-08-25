@@ -33,6 +33,12 @@ func (splitter *Splitter) DistributeLines() {
 	// sort well
 	percent_sample.Shuffle235(splitter.well, splitter.count)
 
+
+	var totalValues = 0
+	for _, percentVal := range splitter.PercentageMap {
+		totalValues += percentVal
+	}
+
 	// for every value in the current well,
 	// randomly select a bucket to place the value in the well
 	for i := 0; i < splitter.count; i++ {
@@ -40,7 +46,7 @@ func (splitter *Splitter) DistributeLines() {
 		val = 0.0
 
 		for bucketIndex, intPercentValue := range splitter.PercentageMap {
-			probValue = float64(intPercentValue) / 100.0
+			probValue = float64(intPercentValue) / totalValues
 
 			val = val + probValue
 			if choice < val {

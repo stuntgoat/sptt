@@ -20,6 +20,7 @@ const (
 var FILENAME string
 var PERCENTAGE_TRAIN int
 var PERCENTAGE_TEST int
+var VALIDATION int
 var command = os.Args[0]
 var invocation = fmt.Sprintf("%s -train PERCENT FILE\n", command)
 var invocationStdin = fmt.Sprintf("%s -train PERCENT -\n", command)
@@ -37,6 +38,9 @@ func init() {
 	pTrainHelp := "Percentage of randomly selected lines for training dataset."
 	ptrain := flag.Int("train", 0, pTrainHelp)
 
+	validationHelp := "Number of validation files to create."
+	validation := flag.Int("validation", 0, validationHelp)
+
 	logger = log.New(os.Stderr, "[sptt] ", log.LstdFlags|log.Lshortfile)
 	rand.Seed(time.Now().UTC().UnixNano())
 
@@ -44,16 +48,14 @@ func init() {
 	flag.Parse()
 
 	PERCENTAGE_TRAIN = *ptrain
+
 	if PERCENTAGE_TRAIN < 0 || PERCENTAGE_TRAIN > 100 {
 		logger.Println("PERCENT must be between 0 and 100")
 		Usage()
 		os.Exit(1)
 	}
+	VALIDATION = *validation
 }
-
-
-
-
 
 // parseFile validates a string and returns an *os.File
 func parseFile(s string) (file *os.File) {
@@ -73,15 +75,42 @@ func parseFile(s string) (file *os.File) {
 	return file
 }
 
-func writeLines() {
+func writeFiles() {
 	trainingFile := FILENAME + ".train"
 	testingFile := FILENAME + ".test"
 	writeFiles(trainingFile, SAMPLE.Buckets[TRAINING_SET])
 	writeFiles(testingFile, SAMPLE.Buckets[TESTING_SET])
+
+	if VALIDATION == 0 {
+		return
+	}
+
+	// create a new validation sample object from the training data bucket
+	// use the number of buckets in VALIDATION
+	vSample := splitter.Splitter{
+	Buckets: make([][]string, 0)
+	}
+
+	for i := 0; i < VALIDATION; i++ {
+		vSample.Buckets[i] = make([]string, 0)
+	}
+
+	percentage
+
+
+	SAMPLE.PercentageMap = map[int]int{
+		TESTING_SET: PERCENTAGE_TEST,
+		TRAINING_SET: PERCENTAGE_TRAIN,
+	}
+
+	// call AddLine for each line in the training data
+
+	// call Write file for each bucket in the validation sample Bucket
+
 }
 
 // writeFiles writes the testing and training files to disk.
-func writeFiles(name string, lines []string) {
+func writeFile(name string, lines []string) {
 	tf, err := os.Create(name)
 	if err != nil {
 		logger.Printf("[Error] unable to open %s: %s", name, err)
@@ -105,7 +134,7 @@ func handleSignal() {
 	<- sigChannel
 
 	SAMPLE.DistributeLines()
-	writeLines()
+	writeFiles()
 	os.Exit(0)
 }
 
@@ -141,5 +170,8 @@ func main() {
 		SAMPLE.AddLine(line)
 	}
 	SAMPLE.DistributeLines()
-	writeLines()
+
+	// replace writeLines with writeFiles
+
+	writeFiles()
 }

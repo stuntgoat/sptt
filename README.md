@@ -9,8 +9,15 @@ To split the file named 'data' into 'data.train', containing ~90% training data 
 
 Usage for files, where `PERCENT` is an integer and `FILE` is a relative path:
 
-    sptt -train PERCENT FILE
+    $ sptt -train PERCENT FILE
 
 Usage for STDIN (this writes 2 files; `STDIN.test` and `STDIN.train`):
 
-    sptt -train PERCENT -
+    $ sptt -train PERCENT -
+    
+STDIN example to create 85% training data and 15% test data from a script named `sampler.sh`:
+    
+    $ ./sampler.sh | sptt -train 85 -
+    
+    
+    
